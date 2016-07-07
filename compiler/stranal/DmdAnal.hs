@@ -475,26 +475,22 @@ dmdFix top_lvl env orig_pairs
         loop' n env pairs
 
     loop' n env pairs
-      | found_fixpoint
+      | found_fixpoint || n > 10
       = (env', lazy_fv, pairs')
                 -- Note: return pairs', not pairs.   pairs' is the result of
                 -- processing the RHSs with sigs (= sigs'), whereas pairs
                 -- is the result of processing the RHSs with the *previous*
                 -- iteration of sigs.
-
-      | n >= 10
+      | n == 10
       = -- pprTrace "dmdFix loop" (ppr n <+> (vcat
         --                 [ text "Sigs:" <+> ppr [ (id,lookupVarEnv (sigEnv env) id,
         --                                              lookupVarEnv (sigEnv env') id)
         --                                          | (id,_) <- pairs],
         --                   text "env:" <+> ppr env,
         --                   text "binds:" <+> pprCoreBinding (Rec pairs)]))
-        (env, lazy_fv, orig_pairs)      -- Safe output
-                -- The lazy_fv part is really important!  orig_pairs has no strictness
-                -- info, including nothing about free vars.  But if we have
-                --      letrec f = ....y..... in ...f...
-                -- where 'y' is free in f, we must record that y is mentioned,
-                -- otherwise y will get recorded as absent altogether
+        loop (n+1) (addPessimisticSigs env bndrs) pairs'
+        -- We are not going to find a fix point any time soon. So do one final round
+        -- of analysis with safe assumptions about the strictness signatures
 
       | otherwise
       = loop (n+1) (nonVirgin env') pairs'
@@ -1008,6 +1004,13 @@ addInitialSigs top_lvl env@(AE { ae_sigs = sigs, ae_virgin = virgin }) ids
   where
     init_sig | virgin    = \_ -> botSig
              | otherwise = idStrictness
+
+addPessimisticSigs :: AnalEnv -> [Id] -> AnalEnv
+addPessimisticSigs env@(AE { ae_sigs = sigs }) ids
+  = env { ae_sigs = extendVarEnvList sigs new_sigs }
+  where
+    new_sigs = [ (id, (toTopSig sig, top_lvl))
+               | id <- ids, let Just (sig, top_lvl) = lookupSigEnv env id ]
 
 nonVirgin :: AnalEnv -> AnalEnv
 nonVirgin env = env { ae_virgin = False }

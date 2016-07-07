@@ -35,7 +35,8 @@ module Demand (
         vanillaCprProdRes, cprSumRes,
         appIsBottom, isBottomingSig, pprIfaceStrictSig,
         trimCPRInfo, returnsCPR_maybe,
-        StrictSig(..), mkStrictSig, mkClosedStrictSig, nopSig, botSig, cprProdSig,
+        StrictSig(..), mkStrictSig, mkClosedStrictSig,
+        nopSig, botSig, toTopSig, cprProdSig,
         isTopSig, hasDemandEnvSig, splitStrictSig, increaseStrictSigArity,
 
         seqDemand, seqDemandList, seqDmdType, seqStrictSig,
@@ -1261,10 +1262,17 @@ emptyDmdEnv = emptyVarEnv
 -- nopDmdType is the demand of doing nothing
 -- (lazy, absent, no CPR information, no termination information).
 -- Note that it is ''not'' the top of the lattice (which would be "may use everything"),
--- so it is (no longer) called topDmd
+-- so it is (no longer) called topDmdType
 nopDmdType, botDmdType :: DmdType
 nopDmdType = DmdType emptyDmdEnv [] topRes
 botDmdType = DmdType emptyDmdEnv [] botRes
+
+-- This converts a demand type to the least useful (most conservative) type
+-- that mentions the same free variables. It takes the role of a top element,
+-- which we do not have, since a top element would have to mention all variables
+-- in the DmdEnv
+toTopDmdType :: DmdType -> DmdType
+toTopDmdType (DmdType env _ _) = DmdType (mapVarEnv (const topDmd) env) [] topRes
 
 cprProdDmdType :: Arity -> DmdType
 cprProdDmdType arity
@@ -1689,6 +1697,9 @@ isBottomingSig (StrictSig (DmdType _ _ res)) = isBotRes res
 nopSig, botSig :: StrictSig
 nopSig = StrictSig nopDmdType
 botSig = StrictSig botDmdType
+
+toTopSig :: StrictSig -> StrictSig
+toTopSig (StrictSig ty) = StrictSig (toTopDmdType ty)
 
 cprProdSig :: Arity -> StrictSig
 cprProdSig arity = StrictSig (cprProdDmdType arity)
