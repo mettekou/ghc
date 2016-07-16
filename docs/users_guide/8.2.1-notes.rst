@@ -32,7 +32,7 @@ Compiler
 
 - Old profiling flags ``-auto-all``, ``-auto``, and ``-caf-all`` are deprecated
   and their usage provokes a compile-time warning.
-  
+
 
 GHCi
 ~~~~
@@ -88,6 +88,8 @@ base
 See ``changelog.md`` in the ``base`` package for full release notes.
 
 -  Version number 4.10.0.0 (was 4.9.0.0)
+
+- ``Data.Either`` now provides ``fromLeft`` and ``fromRight``
 
 binary
 ~~~~~~
