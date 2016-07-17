@@ -284,6 +284,8 @@ isRight (Right _) = True
 
 -- | Return the contents of a 'Left'-value or a default value otherwise.
 --
+-- @since 4.10.0.0
+--
 -- ==== __Examples__
 --
 -- Basic usage:
@@ -298,6 +300,8 @@ fromLeft _ (Left a) = a
 fromLeft a _        = a
 
 -- | Return the contents of a 'Right'-value or a default value otherwise.
+--
+-- @since 4.10.0.0
 --
 -- ==== __Examples__
 --
